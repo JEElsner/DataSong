@@ -4,6 +4,7 @@ import audio
 import csv
 from typing import List
 
+import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -21,78 +22,23 @@ num_of_labels = 20
 song_duration = 2  # two minutes
 
 
-def transpose_data(csv_dict):
-    out = {}
-
-    for row in csv_dict:
-        for key in row.keys():
-            if key not in out.keys():
-                out.update({key: []})
-
-            out[key].append(row[key])
-
-    return out
-
-
-def to_func(dict_data):
-    '''
-    Relates an input dataset to 
-    '''
-
-    key_list = list(dict_data.keys())
-    input_key = key_list[0]
-
-    out = {}
-
-    for key in key_list[1:]:
-        out.update({key: {}})
-
-        for x, y in zip(dict_data[input_key], dict_data[key]):
-            out[key].update({x: y})
-
-    return out
-
-
-def apply_slice_to_all(datasets, s: slice):
-    for k, v in datasets.items():
-        datasets[k] = v[s]
-
-    return datasets
-
-
-def convert_to_float(data):
-    last = 0
-
-    def try_parse_float(x):
-        global last
-
-        try:
-            last = float(x)
-            return last
-        except ValueError:
-            return last
-
-    return (try_parse_float(x) for x in data)
-
-
-def play_with_graph(datasets):
-    relationship = to_func(datasets)
+def visualize(dataset):
 
     fig, ax = plt.subplots()
     line, = plt.plot([], [])
 
-    yrs_per_x_interval = int(len(datasets[x_axis_column_name]) / num_of_labels)
-    plt.xticks(range(0, len(
-        datasets[x_axis_column_name]), yrs_per_x_interval), datasets[x_axis_column_name][::yrs_per_x_interval], rotation=45)
+    # yrs_per_x_interval = int(len(dataset) / num_of_labels)
+    # plt.xticks(range(0, len(dataset), yrs_per_x_interval),
+    #            dataset.iloc[::yrs_per_x_interval], rotation=45)
 
     plt.subplots_adjust(bottom=0.2)
 
     xdata: List[str] = []
     ydata: List[float] = []
 
-    ax.set_xlim(0, len(datasets[x_axis_column_name]))
-    ax.set_ylim(min(datasets[data_column_name]) * 0.9,
-                max(datasets[data_column_name]) * 1.1)
+    ax.set_xlim(0, len(dataset))
+    ax.set_ylim(min(dataset[data_column_name]) * 0.9,
+                max(dataset[data_column_name]) * 1.1)
 
     plt.ion()
     plt.show()
@@ -103,10 +49,10 @@ def play_with_graph(datasets):
         exit()
     fig.canvas.mpl_connect('close_event', win_close)
 
-    for date in datasets[x_axis_column_name]:
+    for date in dataset.index:
         xdata.append(date)
-        ydata.append(relationship[x_axis_column_name][date])
-        audio_manager.setFreq(relationship['FREQUENCY'][date])
+        ydata.append(dataset.loc[date, data_column_name])
+        audio_manager.setFreq(dataset.loc[date, 'FREQUENCY'])
         line.set_data(range(0, len(ydata)), ydata)
 
         try:
@@ -119,28 +65,26 @@ def play_with_graph(datasets):
     input("Press ENTER to continue...")
 
 
-with open(file_path, mode='r') as csv_file:
-    csv_dict = csv.DictReader(csv_file)
+if __name__ == '__main__':
+    dataset = pd.read_csv('SP500.csv', index_col=0,
+                          parse_dates=True, dtype={'SP500': np.float64}, na_values='.')
 
-    datasets = transpose_data(csv_dict)
-    datasets[data_column_name] = list(
-        convert_to_float(datasets[data_column_name]))
-    datasets = apply_slice_to_all(datasets, data_slice)
+    dataset.dropna(subset=['SP500'], inplace=True)
 
-    data_arr = np.array(datasets[data_column_name])
+    # Slice data to only take the range we want
+    dataset = dataset.iloc[data_slice]
 
-    notes = converter.to_notes(data_arr)
-    datasets.update({'NOTE': list(notes)})
+    dataset['NOTE'] = converter.to_notes(dataset['SP500'])
+    dataset['FREQUENCY'] = converter.frequency(dataset['NOTE'])
 
-    freqs = converter.frequency(notes)
-    datasets.update({'FREQUENCY': list(freqs)})
-
-    bpm = len(data_arr) / song_duration
+    bpm = len(dataset) / song_duration
     if bpm < 120:
         bpm = 120
     note_length = 60 / bpm
 
     print('{0} notes\n{1} minutes\n{2} bpm\n'.format(
-        len(notes), song_duration, bpm))
+        len(dataset), song_duration, bpm))
 
-    play_with_graph(datasets)
+    dataset.to_csv('parsed_dataset.csv')
+
+    visualize(dataset)
