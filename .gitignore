@@ -139,6 +139,7 @@ dmypy.json
 .pytype/
 
 ### VisualStudioCode ###
+.vscode/
 .vscode/*
 # !.vscode/settings.json
 # !.vscode/tasks.json
@@ -177,3 +178,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,python,visualstudiocode
+
+# Ignore project data files
+*.csv
