@@ -1,39 +1,46 @@
 import numpy as np
 import audio
 
-#scale = ['C', 'CS', 'D', 'DS', 'E', 'F', 'FS', 'G', 'GS', 'A', 'AS', 'B']
+# scale = ['C', 'CS', 'D', 'DS', 'E', 'F', 'FS', 'G', 'GS', 'A', 'AS', 'B']
 scale = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 octave_min = 4
 octave_range = 2
 bpm = 120
+a4_freq = 440
 
 note_names = {'C': 0, 'CS': 1, 'DF': 1, 'D': 2, 'DS': 3, 'EF': 3, 'E': 4, 'F': 5,
               'FS': 6, 'GF': 6, 'G': 7, 'GS': 8, 'AF': 8, 'A': 9, 'AS': 10, 'BF': 10, 'B': 11}
 
 
 def midi(note_name, octave=4):
-    letter = ''
 
-    for i in range(len(note_name), 0, -1):
-        if i == 0:
-            raise ValueError
+    def parse(note, octave=octave):
+        for i in range(len(note), 0, -1):
+            if i == 0:
+                raise ValueError
 
-        if note_name[:i].isalpha():
-            letter = note_name[:i]
-            try:
-                octave = int(note_name[i:])
-            except ValueError:
-                pass
-            break
+            if note[:i].isalpha():
+                letter = note[:i].upper()
+                try:
+                    octave = int(note[i:])
+                except ValueError:
+                    pass
+                break
 
-    return 12 * (octave+1) + note_names[letter]
+        return 12 * (octave+1) + note_names[letter]
+
+    if isinstance(note_name, list) or isinstance(note_name, np.ndarray):
+        note_name = np.array(note_name)
+        return np.fromiter((parse(note, octave=o) for note, o in zip(note_name, np.resize(octave, note_name.shape))), int)
+    else:
+        return parse(note_name)
 
 
 def frequency(note):
     if isinstance(note, str):
         note = midi(note)
 
-    return np.power(2, (note-69)/12) * 440
+    return np.power(2, (note-69)/12) * a4_freq
 
 
 def to_notes(data):
