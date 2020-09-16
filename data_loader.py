@@ -13,8 +13,8 @@ from matplotlib.animation import FuncAnimation
 import tkinter
 
 file_path = 'SP500.csv'
-x_axis_column_name = 'DATE'
-data_column_name = 'SP500'
+index_col = 'DATE'
+data_col = 'SP500'
 
 data_slice = slice(None, None, 1)
 num_of_labels = 20
@@ -37,8 +37,8 @@ def visualize(dataset):
     ydata: List[float] = []
 
     ax.set_xlim(0, len(dataset))
-    ax.set_ylim(min(dataset[data_column_name]) * 0.9,
-                max(dataset[data_column_name]) * 1.1)
+    ax.set_ylim(min(dataset[data_col]) * 0.9,
+                max(dataset[data_col]) * 1.1)
 
     plt.ion()
     plt.show()
@@ -51,7 +51,7 @@ def visualize(dataset):
 
     for date in dataset.index:
         xdata.append(date)
-        ydata.append(dataset.loc[date, data_column_name])
+        ydata.append(dataset.loc[date, data_col])
         audio_manager.setFreq(dataset.loc[date, 'FREQUENCY'])
         line.set_data(range(0, len(ydata)), ydata)
 
@@ -66,15 +66,15 @@ def visualize(dataset):
 
 
 if __name__ == '__main__':
-    dataset = pd.read_csv('SP500.csv', index_col=0,
-                          parse_dates=True, dtype={'SP500': np.float64}, na_values='.')
+    dataset = pd.read_csv(file_path, index_col=0,
+                          parse_dates=True, dtype={data_col: np.float64}, na_values='.')
 
-    dataset.dropna(subset=['SP500'], inplace=True)
+    dataset.dropna(subset=[data_col], inplace=True)
 
     # Slice data to only take the range we want
     dataset = dataset.iloc[data_slice]
 
-    dataset['NOTE'] = converter.to_notes(dataset['SP500'])
+    dataset['NOTE'] = converter.to_notes(dataset[data_col])
     dataset['FREQUENCY'] = converter.frequency(dataset['NOTE'])
 
     dataset.to_csv('parsed_dataset.csv')
