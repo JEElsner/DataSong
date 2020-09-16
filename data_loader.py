@@ -16,10 +16,10 @@ file_path = 'SP500.csv'
 x_axis_column_name = 'DATE'
 data_column_name = 'SP500'
 
-data_slice = slice(-30, None, 1)
+data_slice = slice(None, None, 1)
 num_of_labels = 20
 
-song_duration = 2  # two minutes
+song_duration = .5  # in minutes
 
 
 def visualize(dataset):
@@ -56,7 +56,7 @@ def visualize(dataset):
         line.set_data(range(0, len(ydata)), ydata)
 
         try:
-            plt.pause(note_length)
+            plt.pause(note_length)  # Hmmm, this accesses a global variable...
         except tkinter.TclError:
             break
 
@@ -77,6 +77,8 @@ if __name__ == '__main__':
     dataset['NOTE'] = converter.to_notes(dataset['SP500'])
     dataset['FREQUENCY'] = converter.frequency(dataset['NOTE'])
 
+    dataset.to_csv('parsed_dataset.csv')
+
     bpm = len(dataset) / song_duration
     if bpm < 120:
         bpm = 120
@@ -84,7 +86,5 @@ if __name__ == '__main__':
 
     print('{0} notes\n{1} minutes\n{2} bpm\n'.format(
         len(dataset), song_duration, bpm))
-
-    dataset.to_csv('parsed_dataset.csv')
 
     visualize(dataset)
